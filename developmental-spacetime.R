@@ -1,7 +1,12 @@
+## This code is in base R and was used for my preprint "A Waddington Epigenetic Landscape for the C. elegans embryo" (bioRxiv 2020).
+## The code converts the C. elegans early embryonic lineage to a matrix and uses the number of detected genes per cell (scRNAseq dataset Tintori et al. 2016)
+## in order to define the elevation of each cell region in the matrix. The result is a downward slope communicating the decrease in the number of
+## expressed genes as cells differentiate. The landscape can then be used to plot gene expression during early embryogenesis on a "Developmental Spacetime"
+## that encompasses all cells from generated during the first four rounds of division.
+
 library(RColorBrewer)
 
-#Assign samples to cells in R for Tintori dataset
-
+#Assign Tintori dataset samples to C. elegans embryonic cells
 P0 <- c('st451','st449','st441','st413','st411')
 AB <- c('st409','st361','st311','st301','st265')
 P1 <- c('st410','st362','st312','st266','st302')
@@ -30,9 +35,11 @@ ABprx <- c('st509','st505','st472','st465','st540','st537','st352','st350','st31
 ABalx <- c('st469','st467','st539','st536','st351','st345','st319','st314','st256','st255')
 ABarx <- c('st508','st506','st470','st466','st538','st535','st348','st346','st320','st316','st254','st253')
 
-rpkm <- read.csv('/Users/salnewt/Documents/05_devst/15_complexity/06_trintoni/TableS2/TableS2_RPKMs.csv')
 
 ## Number of detected genes in R
+rpkm <- read.csv('TableS2_RPKMs.csv',header=TRUE)
+rownames(rpkm) <- rpkm$transcript
+rpkm <- rpkm[,2:ncol(rpkm)]
 
 ndg <- list()
 for (i in colnames(rpkm)){
@@ -40,23 +47,15 @@ for (i in colnames(rpkm)){
   }
 
 ndg <- as.matrix(ndg)
-hl = max(as.numeric(ndg))+100
-ll = min(as.numeric(ndg))-100
-# for Figure 2B
-par(mfrow=c(2,3))
-boxplot(cbind(unlist(ndg[P0,]),unlist(ndg[AB,]),unlist(ndg[ABa,]),unlist(ndg[ABal,]),unlist(ndg[ABalx,])),
-        las=1,cex.axis=0.8,ylim=c(ll,hl),main='P0 to ABalx',ylab='detected genes', 
-        names=c('P0','AB','ABa','ABal','ABalx')) 
-boxplot(cbind(unlist(ndg[P0,]),unlist(ndg[P1,]),unlist(ndg[EMS,]),unlist(ndg[E,]),unlist(ndg[Ea,])),
-        las=1,cex.axis=0.8,ylim=c(ll,hl),main='P0 to Ea',ylab='detected genes', 
-        names= c('P0','P1', 'EMS','E','Ea'))
+hl = max(as.numeric(ndg))+100 # high limit
+ll = min(as.numeric(ndg))-100 # low limit
 
 # Convert embryonic lineage to landscape with elevation determined by number of detected genes
-rpkm <- read.csv('/Users/salnewt/Documents/05_devst/15_complexity/06_trintoni/TableS2/TableS2_RPKMs.csv',header=TRUE)
-rownames(rpkm) <- rpkm$transcript
-rpkm <- rpkm[,2:ncol(rpkm)]
-# to generate lineage matrix
+
+# Generate a lineage matrix called ndgheat (i.e. Number of Detected Genes Heatmap)
 ndgheat <- matrix(0L,16,32)
+
+# Populate regions of the matrix with data from it's corresponding cell
 ndgheat[1,1:32]                                   <- mean(unlist(ndg[P0,]))#P0 region
 ndgheat[2:5,  ((32/2)*1)+1  :  as.integer(32/2) ]	<- mean(unlist(ndg[P1,]))#P1 region
 ndgheat[6:10, ((32/4)*3)+1  :  as.integer(32/4) ]	<- mean(unlist(ndg[P2,]))#P2 region
@@ -84,13 +83,15 @@ ndgheat[12:16,1             :  as.integer(32/8) ]	<- mean(unlist(ndg[ABalx,]))#A
 ndgheat[12:16,((32/16)*2)+1 :  as.integer(32/8) ]	<- mean(unlist(ndg[ABarx,]))#ABarx region
 ndgheat[12:16,((32/16)*4)+1 :  as.integer(32/8) ]	<- mean(unlist(ndg[ABplx,]))#ABplx region
 ndgheat[12:16,((32/16)*6)+1 :  as.integer(32/8) ]	<- mean(unlist(ndg[ABprx,]))#ABprx region
-par(mfrow=c(2,2))
 
+# Represent number of detected genes by elevation of terrain (z axis) and with terrain colors
 col.pal.ndg<- terrain.colors
 colors.ndg<-col.pal.ndg(100)
 z<-ndgheat
 z.facet.center <- (z[-1, -1] + z[-1, -ncol(z)] + z[-nrow(z), -1] + z[-nrow(z), -ncol(z)])/4
 z.facet.range<-cut(z.facet.center, 100)
+
+# Plot landscape
 par(mfrow=c(2,2))
 persp(as.matrix(ndgheat),expand = 0.3,theta = 120,phi=30,ticktype = 'detailed',cex.axis=0.5,col=colors.ndg[z.facet.range],
       xlab='Distance from Zygote',ylab='',zlab='Detected Genes',cex.lab=0.5)
@@ -102,7 +103,9 @@ persp(as.matrix(ndgheat),expand = 0.3,theta=180,phi=0,ticktype = 'detailed',cex.
       xlab='Distance from Zygote',ylab='',zlab='Detected Genes',cex.lab=0.5)
 
 
-# PLOTTING gene expression
+# Use landscape to plot gene expression. The first three genes represent maternal regulators
+# The second three genes represent mesoendoderm master regulators
+# The final trio represent RNAi pathway genes
 col.pal<-colorRampPalette(rev(brewer.pal(n = 3, name = "RdBu")))
 colors<-col.pal(100)
 par(mfrow=c(3,3))
