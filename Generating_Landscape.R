@@ -3,6 +3,8 @@
 ## in order to define the elevation of each cell region in the matrix. The result is a downward slope communicating the decrease in the number of
 ## expressed genes as cells differentiate. The landscape can then be used to plot gene expression during early embryogenesis on a "Developmental Spacetime"
 ## that encompasses all cells from generated during the first four rounds of division.
+## Note that in the preprint I use a different metric than "number of detected genes" to define elevation. There, I used "Epigenetic tension" (the formula is in the preprint)
+## Currently, I prefer to use Shannon´s Entropy to define elevation. 
 
 library(RColorBrewer)
 
